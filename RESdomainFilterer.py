@@ -3,6 +3,7 @@ import requests
 from tkinter import filedialog
 from tkinter import *
 import webbrowser
+import json
 
 
 # # Welcome and tell user to back up their current RES settings
@@ -18,9 +19,10 @@ import webbrowser
 # # Get user's current .resbackup file
 # print("Press ENTER to select the RES backup file you just saved. It\'s probably in your Downloads folder.")
 # input()
-# root = Tk()
+root = Tk()
 # root.filename =  filedialog.askopenfilename(initialdir = "/",title = "Select file",filetypes = (("RES Backup File","*.resbackup"),("all files","*.*")))
-# print ("Selected: " + root.filename + "\n\n")
+root.filename = "H:/Michael/Downloads/RES-2018-7-10-1531243753-5_12_5.resbackup"
+print ("Selected: " + root.filename + "\n\n")
 
 # Get user's filter criteria
 filterDict = {
@@ -121,6 +123,11 @@ for link in domains_to_search:
     added += 1
     print("\rAdding: {}  |  Domain {}/{}                 ".format(source, added, len(domains_to_search)), end="", flush=True)
 print("\n")
-print(domains_to_add)
 
-
+# Load User's RES settings
+with open(root.filename, 'r', encoding='utf-8') as json_data:
+    settings = json.load(json_data)
+    current_domains = settings["data"]["RESoptions.filteReddit"]["domains"]["value"]
+    # Add new domains
+    for domain in domains_to_add:
+        current_domains.append([domain, 'everywhere', ''])
