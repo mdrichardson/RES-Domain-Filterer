@@ -6,22 +6,22 @@ import webbrowser
 import json
 
 
-# # Welcome and tell user to back up their current RES settings
-# print("\n\n")
-# print("RES DOMAIN FILTERER - Scrapes domains from selected pages of MediaBiasFactCheck.com and adds them to Reddit Enhancement Suite's Domain Filters")
-# print("=" * 100)
-# print("You first need to back up your current RES settings.")
-# print("Press ENTER to open your RES settings page.")
-# input()
-# webbrowser.open("https://old.reddit.com/r/all/#res:settings/backupAndRestore")
-# print("Backup your settings as a File. Save the file to your hard drive.\n\n")
+# Welcome and tell user to back up their current RES settings
+print("\n\n")
+print("RES DOMAIN FILTERER - Scrapes domains from selected pages of MediaBiasFactCheck.com and adds them to Reddit Enhancement Suite's Domain Filters")
+print("=" * 100)
+print("You first need to back up your current RES settings.")
+print("Press ENTER to open your RES settings page. Or type 's' to skip")
+choice = input()
+if choice != "s":
+    webbrowser.open("https://old.reddit.com/r/all/#res:settings/backupAndRestore")
+    print("Backup your settings as a File. Save the file to your hard drive.\n\n")
 
-# # Get user's current .resbackup file
-# print("Press ENTER to select the RES backup file you just saved. It\'s probably in your Downloads folder.")
-# input()
+# Get user's current .resbackup file
+print("Press ENTER to select the RES backup file you just saved. It\'s probably in your Downloads folder.")
+input()
 root = Tk()
-# root.filename =  filedialog.askopenfilename(initialdir = "/",title = "Select file",filetypes = (("RES Backup File","*.resbackup"),("all files","*.*")))
-root.filename = "H:/Michael/Downloads/RES-2018-7-10-1531243753-5_12_5.resbackup"
+root.filename =  filedialog.askopenfilename(initialdir = "/",title = "Select file",filetypes=(("RES Backup File","*.resbackup"),("all files","*.*")))
 print ("Selected: " + root.filename + "\n\n")
 
 # Get user's filter criteria
@@ -89,6 +89,11 @@ for url in selectedURLs:
             pre = p
             break
     if not pre:
+        for p in all_p:
+            if "See also:" in p.getText():
+                pre = p.parent
+                break
+    if not pre:
         print("Error finding domain list for {}".format(url))
         break
     domain_list = pre.findNextSibling()
@@ -128,6 +133,25 @@ print("\n")
 with open(root.filename, 'r', encoding='utf-8') as json_data:
     settings = json.load(json_data)
     current_domains = settings["data"]["RESoptions.filteReddit"]["domains"]["value"]
+    current_domain_names = []
+    for c_d in current_domains:
+        current_domain_names.append(c_d[0])
     # Add new domains
     for domain in domains_to_add:
-        current_domains.append([domain, 'everywhere', ''])
+        if domain not in current_domain_names:
+            current_domains.append([domain, 'everywhere', ''])
+    print("Domain filters are ready to be saved. Press ENTER when ready.")
+    input()
+    new_settings = filedialog.asksaveasfile(mode='w', defaultextension=".resbackup", filetypes=(("RES Backup", "*.resbackup"),("All Files", "*.*") ))
+    new_settings.write(json.dumps(settings))
+    new_settings.close()
+
+# Help user upload new settings
+print("SUCCESS!!\n")
+print("Now, you need to use RES's Restore function to upload your new settings")
+print("Press ENTER to open the Restore Settings page")
+input()
+webbrowser.open("https://old.reddit.com/r/all/#res:settings/backupAndRestore")
+print("COMPLETE")
+
+
