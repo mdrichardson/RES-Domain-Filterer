@@ -105,25 +105,33 @@ for url in selectedURLs:
 print("Getting URLs for those domains. This might take a few minutes...")
 added = 0
 domains_to_add = []
+domain_errors = []
 for link in domains_to_search:
-    page = requests.get(link, headers=header).text
-    soup = BeautifulSoup(page, 'html.parser')
-    all_p = soup.findAll("p")
-    parent = None
-    # Most links are listed under "Source:"
-    for p in all_p:
-        if "Source:" in p.getText():
-            parent = p
-            break
-    # Otherwise, they seem to be listed under "Notes:"
-    if not parent:
+    if "mediabiasfactcheck" in link:
+        page = requests.get(link, headers=header).text
+        soup = BeautifulSoup(page, 'html.parser')
+        all_p = soup.findAll("p")
+        parent = None
+        # Most links are listed under "Source:"
         for p in all_p:
-            if "Notes:" in p.getText():
+            if "Source:" in p.getText():
                 parent = p
-    if not parent:
-        print("Error getting actual URL for {}".format(link))
-        break     
-    source = parent.find("a")['href'].replace("http://", "").replace("https://","").replace("www.","").replace("/","")
+                break
+        # Otherwise, they seem to be listed under "Notes:"
+        if not parent:
+            for p in all_p:
+                if "Notes:" in p.getText():
+                    parent = p
+        if not parent:
+            print("Error getting actual URL for {}".format(link))
+            domain_errors.append(link)
+            continue
+        try:
+            source = parent.find("a")['href'].replace("http://", "").replace("https://","").replace("www.","").replace("/","")
+        except TypeError:
+            domain_errors.append(link)
+    else:
+        source = link.replace("http://", "").replace("https://","").replace("www.","").replace("/","")
     domains_to_add.append(source)
     added += 1
     print("\rAdding: {}  |  Domain {}/{}                 ".format(source, added, len(domains_to_search)), end="", flush=True)
@@ -153,5 +161,7 @@ print("Press ENTER to open the Restore Settings page")
 input()
 webbrowser.open("https://old.reddit.com/r/all/#res:settings/backupAndRestore")
 print("COMPLETE")
-
+print("Please note, the following domains failed to be filtered:")
+for error in domain_errors:
+    print(error)
 
