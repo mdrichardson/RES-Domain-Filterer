@@ -74,24 +74,53 @@ for selected in filterSelection:
     selectedURLs.append(filterDict[int(selected)]["source"])
 
 # Scrape filter selections for URLs to filter
+print("\nGetting list of domains...")
 header = {'User-agent' : 'Mozilla/5.0 (Windows; U; Windows NT 5.1; de; rv:1.9.1.5) Gecko/20091102 Firefox/3.5.5'}
 for url in selectedURLs:
     page = requests.get(url, headers=header).text
     soup = BeautifulSoup(page, 'html.parser')
     all_p = soup.findAll("p")
     pre = None
+    # Get mediabiasfactcheck links
     for p in all_p:
         if "See Also:" in p.getText():
             pre = p
             break
-    if not p:
+    if not pre:
         print("Error finding domain list for {}".format(url))
         break
     domain_list = pre.findNextSibling()
     domains = domain_list.findAll("a")
+    domains_to_search = []
     for d in domains:
-        print(d['href'])
-
-
+        domains_to_search.append(d['href'])
+# From mediabiasfactcheck links, get domain's actual URL
+print("Getting URLs for those domains. This might take a few minutes...")
+added = 0
+domains_to_add = []
+for link in domains_to_search:
+    page = requests.get(link, headers=header).text
+    soup = BeautifulSoup(page, 'html.parser')
+    all_p = soup.findAll("p")
+    parent = None
+    # Most links are listed under "Source:"
+    for p in all_p:
+        if "Source:" in p.getText():
+            parent = p
+            break
+    # Otherwise, they seem to be listed under "Notes:"
+    if not parent:
+        for p in all_p:
+            if "Notes:" in p.getText():
+                parent = p
+    if not parent:
+        print("Error getting actual URL for {}".format(link))
+        break     
+    source = parent.find("a")['href'].replace("http://", "").replace("https://","").replace("www.","").replace("/","")
+    domains_to_add.append(source)
+    added += 1
+    print("\rAdding: {}  |  Domain {}/{}                 ".format(source, added, len(domains_to_search)), end="", flush=True)
+print("\n")
+print(domains_to_add)
 
 
