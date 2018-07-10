@@ -132,7 +132,8 @@ for link in domains_to_search:
             domain_errors.append(link)
     else:
         source = link.replace("http://", "").replace("https://","").replace("www.","").replace("/","")
-    domains_to_add.append(source)
+    if source not in domains_to_add:
+        domains_to_add.append(source)
     added += 1
     print("\rAdding: {}  |  Domain {}/{}                 ".format(source, added, len(domains_to_search)), end="", flush=True)
 print("\n")
