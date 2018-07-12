@@ -123,7 +123,7 @@ for link in domains_to_search:
                 if "Notes:" in p.getText():
                     parent = p
         if not parent:
-            print("Error getting actual URL for {}".format(link))
+            print("\rError getting actual URL for {}".format(link))
             domain_errors.append(link)
             continue
         try:
@@ -135,7 +135,7 @@ for link in domains_to_search:
     if source not in domains_to_add:
         domains_to_add.append(source)
     added += 1
-    print("\rAdding: {0:<50} [Domain {1:>4}/{2:<4}]".format(source, added, len(domains_to_search)), end="", flush=True)
+    print("\rAdding: {0:<75} [Domain {1:>4}/{2:<4}]".format(source, added, len(domains_to_search)), end="", flush=True)
 print("\n")
 
 # Load User's RES settings
