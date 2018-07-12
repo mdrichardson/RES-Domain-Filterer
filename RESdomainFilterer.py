@@ -25,7 +25,7 @@ root.filename =  filedialog.askopenfilename(initialdir = "/",title = "Select fil
 print ("Selected: " + root.filename + "\n\n")
 
 # Get user's filter criteria
-filterDict = {
+filter_dict = {
     1: {
         "source": "https://mediabiasfactcheck.com/left/",
         "title": "Left Bias"
@@ -64,22 +64,22 @@ filterDict = {
     },
 }
 print("Filter options:")
-for num, details in filterDict.items():
+for num, details in filter_dict.items():
     print("  {}. {}".format(num, details["title"]))
 print("\nEnter the filters you\'d like to create. For multiple filters, enter them without spaces or commas.")
 print("For example, if you wanted to filter Left Bias, Right Bias, and Quesionable Sources, you'd use \"158\"\n")
-filterSelection = input("Enter your desired filters: ")
+filter_selection = input("Enter your desired filters: ")
 print("\nYou selected:")
-selectedURLs = []
-for selected in filterSelection:
-    print("  {}. {}".format(selected, filterDict[int(selected)]["title"]))
-    selectedURLs.append(filterDict[int(selected)]["source"])
+selected_urls = []
+for selected in filter_selection:
+    print("  {}. {}".format(selected, filter_dict[int(selected)]["title"]))
+    selected_urls.append(filter_dict[int(selected)]["source"])
 
 # Scrape filter selections for URLs to filter
 print("\nGetting list of domains...")
 header = {'User-agent' : 'Mozilla/5.0 (Windows; U; Windows NT 5.1; de; rv:1.9.1.5) Gecko/20091102 Firefox/3.5.5'}
 domains_to_search = []
-for url in selectedURLs:
+for url in selected_urls:
     page = requests.get(url, headers=header).text
     soup = BeautifulSoup(page, 'html.parser')
     all_p = soup.findAll("p")
@@ -161,7 +161,8 @@ with open(root.filename, 'r', encoding='utf-8') as json_data:
 # Help user upload new settings
 print("SUCCESS!\n")
 print("Now, you need to use RES's Restore function to upload your new settings")
-print("Press ENTER to open the Restore Settings page")
+print("Press ENTER to open the Restore Settings page. Restore your settings using the new file we just created.")
+print("If you backup your RES settings to a cloud service, you may want to manually force a backup so RES doesn't nag you about it.")
 input()
 webbrowser.open("https://old.reddit.com/r/all/#res:settings/backupAndRestore")
 print("COMPLETE")
