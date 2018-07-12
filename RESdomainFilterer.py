@@ -149,6 +149,9 @@ with open(root.filename, 'r', encoding='utf-8') as json_data:
     for domain in domains_to_add:
         if domain not in current_domain_names:
             current_domains.append([domain, 'everywhere', ''])
+    # Sort domains
+    current_domains.sort()
+    # Save it
     print("Domain filters are ready to be saved. Press ENTER when ready.")
     input()
     new_settings = filedialog.asksaveasfile(mode='w', defaultextension=".resbackup", filetypes=(("RES Backup", "*.resbackup"),("All Files", "*.*") ))
