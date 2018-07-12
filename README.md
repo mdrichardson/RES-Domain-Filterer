@@ -1,6 +1,6 @@
 # Reddit Enhancement Suite Domain Filterer
 
-This is a basic script I use to add biased media domains to Reddit Enhancement Suite's (RES) domain filter. For example, I used this to hide the most biased and untrustworthy news sources identified by [Media Bias Fact Check](mediabiasfactcheck.com) (about 450 unique domains) so that I no longer see them when browsing Reddit.
+This is a basic script I use to add biased media domains to Reddit Enhancement Suite's (RES) domain filter. For example, I used this to hide the most biased and untrustworthy news sources identified by [Media Bias Fact Check](mediabiasfactcheck.com) (about 1200 unique domains) so that I no longer see them when browsing Reddit.
 
 ## Features
 
