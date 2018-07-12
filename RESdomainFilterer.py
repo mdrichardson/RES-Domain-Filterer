@@ -78,6 +78,7 @@ for selected in filterSelection:
 # Scrape filter selections for URLs to filter
 print("\nGetting list of domains...")
 header = {'User-agent' : 'Mozilla/5.0 (Windows; U; Windows NT 5.1; de; rv:1.9.1.5) Gecko/20091102 Firefox/3.5.5'}
+domains_to_search = []
 for url in selectedURLs:
     page = requests.get(url, headers=header).text
     soup = BeautifulSoup(page, 'html.parser')
@@ -95,10 +96,9 @@ for url in selectedURLs:
                 break
     if not pre:
         print("Error finding domain list for {}".format(url))
-        break
+        continue
     domain_list = pre.findNextSibling()
     domains = domain_list.findAll("a")
-    domains_to_search = []
     for d in domains:
         domains_to_search.append(d['href'])
 # From mediabiasfactcheck links, get domain's actual URL
@@ -159,7 +159,7 @@ with open(root.filename, 'r', encoding='utf-8') as json_data:
     new_settings.close()
 
 # Help user upload new settings
-print("SUCCESS!!\n")
+print("SUCCESS!\n")
 print("Now, you need to use RES's Restore function to upload your new settings")
 print("Press ENTER to open the Restore Settings page")
 input()
