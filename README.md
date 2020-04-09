@@ -30,9 +30,13 @@ Note: All limitations only exist because this script did what it needed to do fo
   * MediaBiasFactCheck doesn't list the URLs uniformly, which makes it a bit of a hassle to ensure they all scrape appropriately
     * As a quick "fix", a list of error domains is printed at the end of the script so that users can them manually
 * Media Bias Fact Check - I don't know how accurate they are, but I chose them as the source due to a lack of efficient alternatives
+ 
+## Requires
+
+* python 3
 
 ## Usage
 
-1. `pip install beautifulsoup4`
-2. From a command prompt, `python RESdomainFilterer.py`
+1. `pip install -r requirements.txt`
+2. `python RESdomainFilterer.py`
 3. Follow the prompts

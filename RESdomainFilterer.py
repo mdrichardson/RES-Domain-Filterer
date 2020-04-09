@@ -24,6 +24,14 @@ root = Tk()
 root.filename =  filedialog.askopenfilename(initialdir = "/",title = "Select file",filetypes=(("RES Backup File","*.resbackup"),("all files","*.*")))
 print ("Selected: " + root.filename + "\n\n")
 
+# Load User's RES settings
+current_domain_names = {}
+with open(root.filename, 'r', encoding='utf-8') as json_data:
+    settings = json.load(json_data)
+    current_domains = settings["data"]["RESoptions.filteReddit"]["domains"]["value"]
+    for c_d in current_domains:
+        current_domain_names[c_d[0]] = True
+
 # Get user's filter criteria
 filter_dict = {
     1: {
@@ -82,25 +90,41 @@ domains_to_search = []
 for url in selected_urls:
     page = requests.get(url, headers=header).text
     soup = BeautifulSoup(page, 'html.parser')
-    all_p = soup.findAll("p")
-    pre = None
-    # Get mediabiasfactcheck links
-    for p in all_p:
-        if "See Also:" in p.getText():
-            pre = p
-            break
-    if not pre:
-        for p in all_p:
-            if "See also:" in p.getText():
-                pre = p.parent
-                break
-    if not pre:
-        print("Error finding domain list for {}".format(url))
-        continue
-    domain_list = pre.findNextSibling()
-    domains = domain_list.findAll("a")
-    for d in domains:
-        domains_to_search.append(d['href'])
+    table = soup.find(id='mbfc-table')
+    if not table:
+        print(f"Error finding table for {url}")
+        break
+    rows = table.findAll('tr')
+    for row in rows:
+            try:
+                internal_link = row.find('a')['href']
+                site = internal_link.split("/")[-2]
+                dotcom = f"{site}.com"
+                dotnet = f"{site}.net"
+                dotorg = f"{site}.org"
+                if not current_domain_names.get(dotcom, False) and not current_domain_names.get(dotnet, False) and not current_domain_names.get(dotorg, False):
+                    domains_to_search.append(internal_link)
+            except:
+                continue
+    # pre = None
+    # # Get mediabiasfactcheck links
+    # for p in all_p:
+    #     if "See Also:" in p.getText():
+    #         pre = p
+    #         break
+    # if not pre:
+    #     for p in all_p:
+    #         if "See also:" in p.getText():
+    #             pre = p.parent
+    #             break
+    # if not pre:
+    #     print("Error finding domain list for {}".format(url))
+    #     continue
+    # domain_list = pre.findNextSibling()
+    # domains = domain_list.findAll("a")
+    # for d in domains:
+    #     domains_to_search.append(d['href'])
+
 # From mediabiasfactcheck links, get domain's actual URL
 print("Getting URLs for those domains. This might take a few minutes...")
 added = 0
@@ -108,7 +132,10 @@ domains_to_add = []
 domain_errors = []
 for link in domains_to_search:
     if "mediabiasfactcheck" in link:
-        page = requests.get(link, headers=header).text
+        try:
+            page = requests.get(link, headers=header).text
+        except:
+            continue
         soup = BeautifulSoup(page, 'html.parser')
         all_p = soup.findAll("p")
         parent = None
