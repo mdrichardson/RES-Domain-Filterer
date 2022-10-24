@@ -75,7 +75,7 @@ print("Filter options:")
 for num, details in filter_dict.items():
     print("  {}. {}".format(num, details["title"]))
 print("\nEnter the filters you\'d like to create. For multiple filters, enter them without spaces or commas.")
-print("For example, if you wanted to filter Left Bias, Right Bias, and Quesionable Sources, you'd use \"158\"\n")
+print("For example, if you wanted to filter out Left Bias, Right Bias, and Quesionable Sources, you'd use \"158\"\n")
 filter_selection = input("Enter your desired filters: ")
 print("\nYou selected:")
 selected_urls = []
@@ -106,24 +106,6 @@ for url in selected_urls:
                     domains_to_search.append(internal_link)
             except:
                 continue
-    # pre = None
-    # # Get mediabiasfactcheck links
-    # for p in all_p:
-    #     if "See Also:" in p.getText():
-    #         pre = p
-    #         break
-    # if not pre:
-    #     for p in all_p:
-    #         if "See also:" in p.getText():
-    #             pre = p.parent
-    #             break
-    # if not pre:
-    #     print("Error finding domain list for {}".format(url))
-    #     continue
-    # domain_list = pre.findNextSibling()
-    # domains = domain_list.findAll("a")
-    # for d in domains:
-    #     domains_to_search.append(d['href'])
 
 # From mediabiasfactcheck links, get domain's actual URL
 print("Getting URLs for those domains. This might take a few minutes...")
@@ -137,12 +119,12 @@ for link in domains_to_search:
         except:
             continue
         soup = BeautifulSoup(page, 'html.parser')
-        all_p = soup.findAll("p")
+        all_p = soup.findAll(text=re.compile('Source:'))
         parent = None
         # Most links are listed under "Source:"
         for p in all_p:
-            if "Source:" in p.getText():
-                parent = p
+            if "Source:" in p:
+                parent = p.parent
                 break
         # Otherwise, they seem to be listed under "Notes:"
         if not parent:
