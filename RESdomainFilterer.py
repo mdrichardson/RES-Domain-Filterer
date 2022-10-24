@@ -111,6 +111,7 @@ for url in selected_urls:
 print("Getting URLs for those domains. This might take a few minutes...")
 added = 0
 domains_to_add = []
+domains_to_add_dict = {}
 domain_errors = []
 for link in domains_to_search:
     if "mediabiasfactcheck" in link:
@@ -141,8 +142,9 @@ for link in domains_to_search:
             domain_errors.append(link)
     else:
         source = link.replace("http://", "").replace("https://","").replace("www.","").replace("/","")
-    if source not in domains_to_add:
+    if not domains_to_add_dict[source]:
         domains_to_add.append(source)
+        domains_to_add_dict[source] = True
     added += 1
     print("\rAdding: {0:<75} [Domain {1:>4}/{2:<4}]".format(source, added, len(domains_to_search)), end="", flush=True)
 print("\n")
@@ -151,12 +153,12 @@ print("\n")
 with open(root.filename, 'r', encoding='utf-8') as json_data:
     settings = json.load(json_data)
     current_domains = settings["data"]["RESoptions.filteReddit"]["domains"]["value"]
-    current_domain_names = []
+    current_domain_names = {}
     for c_d in current_domains:
-        current_domain_names.append(c_d[0])
+        current_domain_names[c_d[0]] = True
     # Add new domains
     for domain in domains_to_add:
-        if domain not in current_domain_names:
+        if not current_domain_names[domain]:
             current_domains.append([domain, 'everywhere', ''])
     # Sort domains
     current_domains.sort()
