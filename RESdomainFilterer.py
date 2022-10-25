@@ -1,13 +1,21 @@
-from bs4 import BeautifulSoup
-import requests
 import tkinter as tk
 import webbrowser
 import json
 import argparse
 import re
+from typing import TypedDict, List, Dict, Any
+from bs4 import BeautifulSoup
+import requests
+
+
+class Args(TypedDict):
+    skip_settings: bool
+    res_backup_file: str
+    filter_selection: str
+
 
 AVAILABLE_FILTERS = {
-    1: {"source": "https://mediabiasfactcheck.com/left/", "title": "Left Bias"},
+    1: {"source": "https://mediabiasfactcheck.com/left/", "title": "Left  Bias"},
     2: {
         "source": "https://mediabiasfactcheck.com/leftcenter/",
         "title": "Left-Center Bias",
@@ -40,7 +48,7 @@ HEADER = {
 }
 
 
-def parse_args():
+def parse_args() -> Args:
     parser = argparse.ArgumentParser()
     parser.add_argument("-s", action="store_true", help="Skip RES Settings Backup Step")
     parser.add_argument("-b", help="Path to RES Backup File")
@@ -55,7 +63,7 @@ def parse_args():
     }
 
 
-def print_welcome():
+def print_welcome() -> None:
     print("\n\n")
     print(
         "RES DOMAIN FILTERER - Scrapes domains from selected pages of MediaBiasFactCheck.com and adds them to Reddit Enhancement Suite's Domain Filters"
@@ -63,7 +71,7 @@ def print_welcome():
     print("=" * 100)
 
 
-def backup_RES_settings(args):
+def backup_RES_settings(args: Args) -> None:
     if not args["skip_settings"]:
         print("You first need to back up your current RES settings.")
         print("Press ENTER to open your RES settings page. Or type 's' to skip")
@@ -77,7 +85,7 @@ def backup_RES_settings(args):
             )
 
 
-def get_currently_filtered_domains(args):
+def get_currently_filtered_domains(args: Args) -> Dict[str, Any]:
     if not args["res_backup_file"]:
         # Get user's current .resbackup file
         print(
@@ -106,10 +114,10 @@ def get_currently_filtered_domains(args):
     return currently_filtered_domains_map
 
 
-def get_filters(args):
+def get_filters(args: Args) -> List[str]:
     print("Filter options:")
     for num, details in AVAILABLE_FILTERS.items():
-        print("  {}. {}".format(num, details["title"]))
+        print(f"  {num}. {details['title']}")
     if not args["filter_selection"]:
         print(
             "\nEnter the filters you'd like to create. For multiple filters, enter them without spaces or commas."
@@ -121,22 +129,26 @@ def get_filters(args):
     print("\nYou selected to filter out:")
     urls_to_filter = []
     for selected in args["filter_selection"]:
-        print("  {}. {}".format(selected, AVAILABLE_FILTERS[int(selected)]["title"]))
+        print(f"  {selected}. {AVAILABLE_FILTERS[int(selected)]['title']}")
         urls_to_filter.append(AVAILABLE_FILTERS[int(selected)]["source"])
     return urls_to_filter
 
 
-def get_site_map():
+def get_site_map() -> Dict[str, str]:
     site_map = {}
     try:
         site_map = json.load(open(SITE_MAP_PATH, encoding="utf8"))
         print("Loaded site map")
-    except:
+    except json.JSONDecodeError:
         pass
     return site_map
 
 
-def get_domains_to_search_for(urls_to_filter, currently_filtered_domains_map, site_map):
+def get_domains_to_search_for(
+    urls_to_filter: List[str],
+    currently_filtered_domains_map: Dict[str, bool],
+    site_map: Dict[str, str],
+) -> List[str]:
     print("\nGetting list of domains...")
     domains_to_search_for = []
     for url in urls_to_filter:
@@ -161,13 +173,24 @@ def get_domains_to_search_for(urls_to_filter, currently_filtered_domains_map, si
                     and not site_map.get(internal_link)
                 ):
                     domains_to_search_for.append(internal_link)
-            except:
+            # Row has no links
+            except TypeError:
                 continue
     return domains_to_search_for
 
 
-def get_domains_to_add(domains_to_search_for, site_map):
-    global SITE_MAP_PATH
+def parse_url(url_str: str) -> str:
+    return (
+        url_str.replace("http://", "")
+        .replace("https://", "")
+        .replace("www.", "")
+        .split("/")[0]
+    )
+
+
+def get_domains_to_add_and_errors(
+    domains_to_search_for: List[str], site_map: Dict[str, str]
+) -> List[str]:
     print("Getting URLs for those domains. This might take a while...")
     added = 0
     domains_to_add = []
@@ -175,25 +198,30 @@ def get_domains_to_add(domains_to_search_for, site_map):
     domain_errors = []
     for link in domains_to_search_for:
         source = site_map.get(link)
+        sources = []
         if source:
             domains_to_add.append(link)
             domains_to_add_dict[link] = True
             continue
         if "mediabiasfactcheck" in link:
-            try:
-                result = requests.get(link, headers=HEADER)
-                if result.status_code != 200:
-                    raise f"Error getting actual URL for {link}. Status {result.status_code}"
-                page = result.text
-            except:
+            result = requests.get(link, headers=HEADER)
+            if result.status_code != 200:
+                print(
+                    f"Error getting actual URL for {link}. Status {result.status_code}"
+                )
+                domain_errors.append(link)
                 continue
+            page = result.text
             soup = BeautifulSoup(page, "html.parser")
             source_texts = soup.findAll(text=re.compile("Source"))
             parent = None
             # Most links are listed under "Source:"
             for source_text in source_texts:
+                # Some pages have a primary source and then a list of others
+                if "Related Network Sources:" in source_text:
+                    sources = source_text.parent.find_next_sibling().text.split("\n")
                 # Link placement is extremely inconsistent
-                if "Source:" in source_text or "Sources:" in source_text:
+                elif "Source:" in source_text or "Sources:" in source_text:
                     if (
                         source_text.parent.name == "strong"
                         or source_text.parent.name == "span"
@@ -213,51 +241,47 @@ def get_domains_to_add(domains_to_search_for, site_map):
                     analysis = analysis.parent
                 parent = analysis.find_next_sibling()
             if not parent:
-                print("\rError getting actual URL for {}".format(link))
+                print(f"\rError getting actual URL for {link}")
                 domain_errors.append(link)
                 continue
             try:
-                source = (
-                    parent.find("a")["href"]
-                    .replace("http://", "")
-                    .replace("https://", "")
-                    .replace("www.", "")
-                    .split("/")[0]
-                )
+                source = parse_url(parent.find("a")["href"])
             except TypeError:
-                if "(dot)" in parent.text:
+                if "(dot)" in parent.text or " dot " in parent.text:
                     source = (
                         parent.text.replace("Source:", "")
+                        .replace(" dot ", ".")
                         .replace(" ", "")
                         .replace("(dot)", ".")
                     )
+                if (
+                    ".com" in parent.text
+                    or ".net" in parent.text
+                    or ".org" in parent.text
+                ):
+                    source = parent.text.split("\xa0")[1]
                 else:
                     domain_errors.append(link)
         else:
-            source = (
-                link.replace("http://", "")
-                .replace("https://", "")
-                .replace("www.", "")
-                .split("/")[0]
-            )
-        if not domains_to_add_dict.get(source):
-            domains_to_add.append(source)
-            domains_to_add_dict[source] = True
-            site_map[link] = source
-            json.dump(site_map, open(SITE_MAP_PATH, "w"))
-            added += 1
-            print(
-                "\rAdding: {0:<75} [Domain {1:>4}/{2:<4}]".format(
-                    source, added, len(domains_to_search_for)
-                ),
-                end="",
-                flush=True,
-            )
+            source = parse_url(link)
+        sources.append(source)
+        for s in sources:
+            if not domains_to_add_dict.get(s):
+                domains_to_add.append(s)
+                domains_to_add_dict[s] = True
+                site_map[link] = s
+                json.dump(site_map, open(SITE_MAP_PATH, "w", encoding="utf8"))
+                added += 1
+                print(
+                    f"\rAdding: {s:<75} [Domain {added:>4}/{len(domains_to_search_for):<4}]",
+                    end="",
+                    flush=True,
+                )
     print("\n")
     return domains_to_add, domain_errors
 
 
-def save_RES_settings(domains_to_add, args):
+def save_RES_settings(domains_to_add: List[str], args: Args) -> None:
     with open(args["res_backup_file"], "r", encoding="utf-8") as json_data:
         settings = json.load(json_data)
         current_domains = settings["data"]["RESoptions.filteReddit"]["domains"]["value"]
@@ -283,7 +307,7 @@ def save_RES_settings(domains_to_add, args):
         json_data.close()
 
 
-def upload_settings():
+def upload_settings() -> None:
     print("SUCCESS!\n")
     print("Now, you need to use RES's Restore function to upload your new settings")
     print(
@@ -296,14 +320,14 @@ def upload_settings():
     webbrowser.open("https://old.reddit.com/r/all/#res:settings/backupAndRestore")
 
 
-def print_done_message(domain_errors):
+def print_done_message(domain_errors: List[str]) -> None:
     print("COMPLETE")
     print("Please note, the following domains failed to be filtered:")
     for error in domain_errors:
         print(error)
 
 
-def main():
+def main() -> None:
     args = parse_args()
     print_welcome()
     backup_RES_settings(args)
@@ -314,7 +338,9 @@ def main():
     domains_to_search_for = get_domains_to_search_for(
         urls_to_filter, currently_filtered_domains_map, site_map
     )
-    domains_to_add, domain_errors = get_domains_to_add(domains_to_search_for, site_map)
+    domains_to_add, domain_errors = get_domains_to_add_and_errors(
+        domains_to_search_for, site_map
+    )
     save_RES_settings(domains_to_add, args)
 
     upload_settings()
