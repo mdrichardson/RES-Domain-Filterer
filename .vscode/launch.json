@@ -5,16 +5,29 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Current File",
+            "name": "Run Normal",
             "type": "python",
             "request": "launch",
-            "program": "${file}",
+            "program": "${workspaceFolder}/RESdomainFilterer.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
                 "-s",
                 "-b", "C:/Users/michael/Downloads/RES-2022-10-21-1666395020-5_22_10.resbackup",
                 "-f", "14578"
+            ]
+        },
+        {
+            "name": "Generate All Links",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/RESdomainFilterer.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "-s",
+                "-b", "C:/Users/michael/Downloads/RES-2022-10-21-1666395020-5_22_10.resbackup",
+                "-f", "123456789"
             ]
         }
     ]

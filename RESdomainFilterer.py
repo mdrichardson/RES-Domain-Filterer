@@ -1,8 +1,10 @@
 import tkinter as tk
+import tkinter.filedialog
 import webbrowser
 import json
 import argparse
 import re
+import time
 from typing import TypedDict, List, Dict, Any
 from bs4 import BeautifulSoup
 import requests
@@ -93,7 +95,7 @@ def get_currently_filtered_domains(args: Args) -> Dict[str, Any]:
         )
         input()
         root = tk.Tk()
-        root.filename = tk.filedialog.askopenfilename(
+        root.filename = tkinter.filedialog.askopenfilename(
             initialdir="/",
             title="Select file",
             filetypes=(("RES Backup File", "*.resbackup"), ("all files", "*.*")),
@@ -196,6 +198,7 @@ def get_domains_to_add_and_errors(
     domains_to_add = []
     domains_to_add_dict = {}
     domain_errors = []
+    pauses = 1
     for link in domains_to_search_for:
         source = site_map.get(link)
         sources = []
@@ -205,7 +208,14 @@ def get_domains_to_add_and_errors(
             continue
         if "mediabiasfactcheck" in link:
             result = requests.get(link, headers=HEADER)
-            if result.status_code != 200:
+            if result.status_code == 429:
+                sleep = 60 * pauses
+                print(f"Hit 429 error. Pausing for {sleep} seconds")
+                time.sleep(sleep)
+                pauses += 1
+                domains_to_search_for.append(link)
+                break
+            elif result.status_code != 200:
                 print(
                     f"Error getting actual URL for {link}. Status {result.status_code}"
                 )
@@ -297,7 +307,7 @@ def save_RES_settings(domains_to_add: List[str], args: Args) -> None:
         # Save it
         print("Domain filters are ready to be saved. Press ENTER when ready.")
         input()
-        new_settings = tk.filedialog.asksaveasfile(
+        new_settings = tkinter.filedialog.asksaveasfile(
             mode="w",
             defaultextension=".resbackup",
             filetypes=(("RES Backup", "*.resbackup"), ("All Files", "*.*")),
